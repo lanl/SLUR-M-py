@@ -1,0 +1,31 @@
+## Ignore .pyc files
+**.pyc
+
+## Itnore directorry named pycache and all check poitns 
+NOTEBOOKS/__pycache__/*.pyc
+NOTEBOOKS/.ipynb_checkpoints/*.ipynb 
+NOTEBOOKS/.DS_Store 
+
+__pycache__/*.pyc
+.ipynb_checkpoints/*.ipynb
+*.ipynb
+.DS_Store
+
+## Ignore large files like bam
+**.bam
+
+## Ignore .DS_store files
+**.DS_Store
+.DS_Store
+
+## Itnore .csv files within data
+*.csv
+DATA/*.csv
+
+## Ignore pngs and pdfs made in figures other than the one in there 
+*.png
+*.pdf
+FIGURES/*.png
+FIGURES/*.pdf
+
+## End of file 
