@@ -56,6 +56,9 @@ import sys, json, time, argparse, subprocess
 ## Loadin checksam
 from pysamtools import checksam
 
+## Bring in dask 
+import dask.dataframe as dd 
+
 ## Check samtools
 assert checksam(), 'ERROR: The detected version of samtools is not greater than or equal to v 1.15.1!\nPlease update samtools and try again.\n'
 

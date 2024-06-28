@@ -21,17 +21,20 @@ croth@lanl.gov
 """
 ## ----------------------------------------- LOAD IN MODULES -------------------------------------------- ## 
 ## Load in system, json, and pandas 
-import sys, json, pandas as pd 
+import sys, pandas as pd 
 
 ## Load in check sam 
 from pysamtools import loadbam, readset
 
 ## Load in sort-glob 
-from slurpy import sortglob, fileexists, aligndir, diagdir, debugdir, basenobam
+from defaults import sortglob, fileexists, aligndir, diagdir, basenobam
+
+## Gring in line count ftn 
+from counthic import linecount, parsejson
 
 ## ---------------------------------------- Variable Setting -------------------------------------------- ##
 ## Set the count columns, colors vector, and marked ending
-countcolumns, mycolors = ['Filename','Mapping','Readcounts'], ['red','blue','pink','green','orange','black','purple','grey']
+countcolumns, mycolors = ['Filename','Mapping','Readcounts'], ['red','blue','pink','green','orange','black','purple','grey','brown']
 
 ## -------------------------------------- Function Defining -------------------------------------------- ##
 ## Ftn for testing if an input string is equal to marked
@@ -39,12 +42,6 @@ def ismarked(m):
     """Returns the boolean that m is marked."""
     ## Return negative bool 
     return m == 'marked'
-
-## Write ftn for splitting file name
-#def splitfilename(inbam):
-#    """Splits an input bam file name."""
-#    ## Return the split file 
-#    return inbam.split('/')[-1].split('.bam')[0]
 
 ## Write ftn for gathering bam map names
 def bamnames(inbam):
@@ -64,30 +61,11 @@ def countdups(inbampath):
     ## Calcualte the length of the set 
     return len(set([r.qname for r in loadbam(inbampath) if r.is_duplicate]))
 
-## Write ftn for counting lines in file
-def countlines(inpath):
-    """Opens a file for reading only and counts the lines in file."""
-    ## Set the count variable 
-    count = 0 
-    ## If we can find the input path
-    if fileexists(inpath):
-        ## with open, read in the lines 
-        with open(inpath,'r') as openfile:
-            for line in openfile:
-                ## For each line add to the count 
-                count += 1
-            ## Close the file 
-            openfile.close()
-    else: ## Otherwise do nothing 
-        pass 
-    ## Return count
-    return count 
-
 ## Ftn for returning unmapped reads
 def getunmapped(inpath):
     """Returns counts of the unmapped reads."""
     ## Return the split informations 
-    return inpath.split('/')[-1].split('.txt')[0],'unmapped',countlines(inpath)
+    return inpath.split('/')[-1].split('.txt')[0],'unmapped',linecount(inpath)
 
 ## Ftn for iteratively counting bam 
 def calcbamcounts(inbampaths,unmappedpaths):
@@ -106,36 +84,6 @@ def calcbamcounts(inbampaths,unmappedpaths):
     ## Return the bamcounts as a dataframe 
     return pd.DataFrame(bamcounts,columns = countcolumns)
 
-## Ftn for calculating txt counts
-def calctxtcounts(intxts):
-    ## Initilize bamcounts 
-    bamcounts = []
-    ## Iterate thru
-    for inpath in intxts:
-        ## If the extension is a txt file 
-        if inpath.split('.')[-1] == 'txt':
-            ## Gather the second to last by '.'
-            mapname = inpath.split('.txt')[0].split('.')[-1]
-        ## If it is a bedpe file 
-        elif inpath.split('.')[-1] == 'bedpe':
-            ## make it a hic 
-            mapname = 'hic'
-        else: ## Otherwise take the end 
-            mapname = inpath.split('.')[-1]
-        ## Iterate thru 
-        bamcounts.append((basenobam(inpath),mapname,countlines(inpath)))
-    ## Return the dataframe
-    return pd.DataFrame(bamcounts,columns = countcolumns)
-
-## Ftn for parsing json file
-def parsejson(injson):
-    """Load and parses an input json file, returns object as json dictionary."""
-    ## Loads the json file
-    with open(injson,'r') as infile:
-        data = json.load(infile)
-    ## Return the parsed data
-    return data
-
 ## Ftn for getting read totals 
 def jsontotals(injson,beforeorafter):
     """Parses a json dictionary from fastp to gather read counts. Beforeorafter is a boolean controlling return of counts befor (TRUE) or after filtering (FALSE)."""
@@ -146,42 +94,27 @@ def jsontotals(injson,beforeorafter):
 ## If the script is called 
 if __name__ == "__main__":
     ## Gather the run name from system input 
-    run_name, expmode = sys.argv[1], sys.argv[2]
+    run_name = sys.argv[1]
 
-    ## if we are in hicmode
-    if expmode == 'hic':
-        ## Gather the bampe file, and the the txt files, including the unmapped
-        hic_files = sortglob(f'./{aligndir}/*.bedpe') + sortglob(f'./{aligndir}/*.txt')
-        ## Check whtat we have files
-        assert len(hic_files), "ERROR: Unable to detect hic files."
+    ## Gather the sort bam paths 
+    bampaths = sortglob(f'./{aligndir}/*.bam')
+    ## Gather the json files 
+    try_json_paths = sortglob(f'./{diagdir}/*.json')
+    ## Check that we have bam files
+    assert len(bampaths), "ERROR: Unable to detect bam files on this given wild card path: ./aligned/*.bam"
+    ## count the unmapped txt, gather the counts
+    unmapped_paths = sortglob(f'./{aligndir}/*.unmapped.txt*')
+    ## Check our work
+    assert len(unmapped_paths), "ERROR: Unable to detect list of unmapped read names!"
 
-        ## Initilzse the bam counts
-        thebamcounts = calctxtcounts(hic_files)
-        
-    else: ## Set the bam paths, initilize counts
-        bampaths = sortglob(f'./{aligndir}/*.bam')
-        ## Check that we have bam files
-        assert len(bampaths), "ERROR: Unable to detect bam files on this given wild card path: ./aligned/*.bam"
-
-        ## count the unmapped txt, gather the counts
-        unmapped_paths = sortglob(f'./{aligndir}/*.unmapped.txt')
-        ## Check our work
-        assert len(unmapped_paths), "ERROR: Unable to detect list of unmapped read names!"
-
-        ## Iteratively calculate the n-records
-        thebamcounts = calcbamcounts(bampaths,unmapped_paths)
+    ## Iteratively calculate the n-records
+    thebamcounts = calcbamcounts(bampaths,unmapped_paths)
 
     ## Set the sample name for each count
     thebamcounts['Sample'] = [s.split('.')[0] for s in thebamcounts.Filename.tolist()]
 
     ## Gather the unique smaples
     sample_names = thebamcounts.Sample.unique()
-
-    ## Set the json itertion 
-    i = 1 if expmode == 'hic' else 0
-
-    ## Load in json files, set the json paths 
-    try_json_paths = [f'./{debugdir}/{s}.fastp.log.txt.{i}.json' for s in sample_names]
 
     ## Iterate thru the json paths
     for samplename,json_path in zip(sample_names,try_json_paths):
@@ -215,19 +148,21 @@ if __name__ == "__main__":
     ## Make a color dictionary 
     colordict = dict(zip(thebamcounts.Mapping.unique(),mycolors))
 
+    ## Loadin the correct backend for matplotlib
+    import matplotlib
+    ## Set the needed backend 
+    matplotlib.use('Agg')
+
     ## Load in matplot lib 
     from matplotlib import pyplot as plt
-
     ## Bring in seaborn
     import seaborn as sns 
 
     ## Call a figure, set facecolor
     fig, ax = plt.subplots(1,1,figsize=(7,6))
     fig.set_facecolor('w')
-
     ## Plot the barplot 
     sns.barplot(y='Sample',x='Paired Reads ( Millions )',hue='Mapping',data=thebamcounts,palette=colordict,ax=ax)
-    
     ## Saveout the figure
     plt.savefig(f'./{diagdir}/{run_name}.bam.counts.png',dpi=300,bbox_inches='tight')
 ## End of file

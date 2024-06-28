@@ -1,12 +1,4 @@
 #!/usr/bin/env python
-#SBATCH --job-name=fragdist             ## Name of job
-#SBATCH --output=%x.%j.out              ## Name stdout
-#SBATCH --error=%x.%j.err               ## Name stderr
-#SBATCH --nodes=1                       ## Number of nodes needed for the job
-#SBATCH --ntasks-per-node=1             ## Number of tasks to be launched per Node
-#SBATCH --cpus-per-task=1               ## Number of tasks to be launched
-#SBATCH --mail-type=ALL                 ## Email for all job alerts
-#SBATCH --mail-user=croth@lanl.gov      ## Email to this address
 """
 © 2023. Triad National Security, LLC. All rights reserved.
 This program was produced under U.S. Government contract 89233218CNA000001 for Los Alamos National Laboratory (LANL), which is operated by Triad National Security, LLC for the U.S. Department of Energy/National Nuclear Security Administration. 
@@ -35,7 +27,7 @@ import numpy as np, pandas as pd
 from matplotlib import pyplot as plt 
 
 ## Load in ftns from slurpy
-from slurpy import basenobam
+from defaults import basenobam
 
 ## Load in ftn from pysamtools
 from pysamtools import loadbam, isbam, hasix
@@ -207,6 +199,12 @@ if __name__ == "__main__":
 
     ## Parse the arguments
     args = parser.parse_args()
+
+    ## Loadin the correct backend for matplotlib
+    import matplotlib
+
+    ## Set the agg backend 
+    matplotlib.use('Agg')
 
     ## Set required vars
     bampaths, windowsize, excludes, deltabp, savepath, maxix, legloc = args.b, args.W, args.X, args.D, args.S, args.M, args.L

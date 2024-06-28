@@ -26,18 +26,73 @@ import subprocess, pysam
 ## Load in is file ftn 
 from os.path import isfile
 
+## Load in SeqIO
+from Bio import SeqIO
+
+## Bring in pandas 
+import pandas as pd 
+
 ## ----------------------------------- GENERAL FUNCTIONS --------------------------------- ##
+## Ftn for making a dicitonary for zipped lists
+def dictzip(a,b):
+    """Makes a dictionary from zipped items in lists a and b."""
+    ## Return the zipped dicts
+    return dict(zip(a,b))
+
+## Column names and types of sam file 
+samnames = ['Qname','Flag','Rname','Pos','Mapq','Cigar','Rnext','Pnext','Tlen','Seq']
+samtypes = [  str,   int,   str,    int,  int,    str,    str,    int,   int,   str]
+
+## Make a dict of the sam names and tpes
+samdict = dictzip(samnames,samtypes)
+
+## Define ftn for loading sam file
+def loadsam(inpath:str,chunks:int):
+    """Given input path to .sam file and chunk size, returns an iterable of blocks."""
+    ## Return the iterable 
+    return pd.read_csv(inpath, sep='\t', comment='@', names=samnames, usecols=samnames, chunksize=chunks, dtype=samdict)
+
+## Ftn for checking if input file is a sam 
+def issam(inpath:str) -> bool:
+    """Returns boolean on test that file extension is sam."""
+    ## Checks if a fucntion is a sam file 
+    return inpath.split('.')[-1] == 'sam'
+
+## Ftn for loading in reference in fasta file format 
+def loadref(inpath:str) -> list:
+    """Returns a list of sequences from within input fasta file."""
+    ## Return the records in the loaded reference 
+    return [r for r in SeqIO.parse(inpath,format='fasta')]
+
+## Ftn for getting list of chromosomes
+def getchrlist(inpath:str) -> list:
+    """Returns a list of sequences ids from within input fasta file."""
+    ## Return the records in the loaded reference 
+    return [r.id for r in SeqIO.parse(inpath,format='fasta')]
+
+## Ftn for returing chrom
+def chromdf(inpath:str) -> list:
+    """Returns a pandas dataframe made from the tuples of sequences ids and lenghts from within an input fasta file."""
+    ## Return the records in the loaded reference 
+    return pd.DataFrame([(r.id,len(r.seq)) for r in SeqIO.parse(inpath,format='fasta')])
+
+## Rreturns a signle chromeosome
+def byseq(refs,chrom):
+    """Returns a single record from input reference with matching name to chrom."""
+    ## Return the recored in refs with id or name equal to chormosome
+    return [r for r in refs if (r.id == chrom) or (r.name == chrom)][0]
+
 ## Turns an input into a list 
 def makelist(input):
     """Transforms an input into a list."""
     ## Returns list 
     return input if (type(input) is list) else [input]
 
-## Ftn for making a dicitonary for zipped lists
-def dictzip(a,b):
-    """Makes a dictionary from zipped items in lists a and b."""
-    ## Return the zipped dicts
-    return dict(zip(a,b))
+## Ftn for makign a list of zipped things
+def listzip(a,b):
+    """Forms a list out of items zipped in a and b."""
+    ## Return the list of zipped a and b
+    return list(zip(a,b))
     
 ## Write a ftn for printing given a condition
 def ifprint(message,bool):
@@ -63,13 +118,13 @@ def splitbam(inbam):
 def outnames(inbam,mito):
     """Format and return the name of output txt, bam, and bedpe files."""
     ## Format the name of output files 
-    name_out_bam     = splitbam(inbam) + '.mapped.bam'    ## The output bam name
+    name_out_txt     = splitbam(inbam) + '.mapped.txt'    ## The output bam name
     name_placed_txt  = splitbam(inbam) + '.placed.txt'    ## The placed reads (one mate mapped) bam file  
     name_mito_txt    = splitbam(inbam) + '.%s.txt'%mito   ## The mitochondrial mapped reads
     name_unmap_txt   = splitbam(inbam) + '.unmapped.txt'  ## The unmapped read pairs txt file
     name_out_bedpe   = splitbam(inbam) + '.bedpe'         ## The bedpe file 
     ## Return names
-    return name_out_bam, name_placed_txt, name_mito_txt, name_unmap_txt, name_out_bedpe
+    return name_out_txt, name_placed_txt, name_mito_txt, name_unmap_txt, name_out_bedpe
 
 ## Ftn for returning split sub names
 def splitsubnames(mito):
@@ -78,17 +133,42 @@ def splitsubnames(mito):
     return ['mapped','placed','unmapped',mito,'collisions'] 
 
 ## Ftn for commenting out command lines for debuging
+#def debuglines(intxt):
+#    ## Initilizse new lines and counter
+#    newlines, c = [], 0
+#    ## Iterate thru the input txt lines 
+#    for i,l in enumerate(intxt):
+#        ## If this is the first line, ie the shebang
+#        if (i ==0) and (l[0] == '#'):
+#            newlines.append('#!/usr/bin/env bash\n')
+#        ## If the first chracter is already a comment like #SBATCH
+#        elif (l[0] == '#') and (l[1] != '!'):
+#            newlines.append(l)
+#        ## If it is an echo statment, leave it as is 
+#        elif l.split(' ')[0]=='echo':
+#            newlines.append('sleep 10\n'+l)
+#            c = c + 1
+#        else: ## Othewise, comment out the lines 
+#            newlines.append('##'+l)
+#    ## If no sleep command was added
+#    if c == 0:
+#        ## Adppend the sleep command and the last line un-commented
+#        newlines.append('sleep 10\n' + l.split('#')[-1])
+#    ## Return the commented out lines 
+#    return newlines 
+
+## Ftn for commenting out command lines for debuging
 def debuglines(intxt):
-    ## Initilizse new lines 
+    ## Initilizse new lines and counter
     newlines = []
     ## Iterate thru the input txt lines 
-    for l in intxt: 
+    for l in intxt:
         ## If the first chracter is already a comment like #SBATCH
-        if l[0] == '#':
+        if (l[0] == '#'): 
             newlines.append(l)
         ## If it is an echo statment, leave it as is 
         elif l.split(' ')[0]=='echo':
-            newlines.append('sleep 60\n'+l)
+            newlines.append('sleep 10\n'+l)
         else: ## Othewise, comment out the lines 
             newlines.append('##'+l)
     ## Return the commented out lines 
@@ -99,6 +179,7 @@ def writetofile(inpath,intxt,debug,mode='w'):
     """Opens a file to write lines to file."""
     ## Modify the input text lines if in debug mode
     intxt = debuglines(intxt) if debug else intxt
+    ## Open the input path and write out to file 
     with open(inpath,mode) as ofile:
         ofile.writelines(intxt)
     ## Return the path
@@ -111,10 +192,10 @@ def display(inlines,sep='\n'):
     return sep.join(inlines)
 
 ## Ftn for writing a set of read names
-def writeset(outfile,inset):
+def writeset(outfile,inset,mode='w'):
     """Writes a file of a give set of read names."""
-    ## Open a file for writing
-    return writetofile(outfile, display(list(inset))+'\n', False)
+    ## Open a file for writing, we add a return carage to the display of the set to make sure the counts match
+    return writetofile(outfile, display(list(inset))+'\n', False, mode=mode)
 
 ## --------------------------------- SAMTOOLS VERSION ----------------------------------- ## 
 ## Ftn for calling the commands to shell
@@ -259,11 +340,17 @@ def dupsort(bamin,bamout,threads,keep=False,dupint=1024):
     ## Return the formated txt 
     return f'samtools view -@ {threads} {dupflag(keep)} {dupint} -Shb {bamin} | samtools sort -@ {threads} - -o {bamout} -O BAM --write-index\n'
 
+## Ftn for formating chromosomes
+def formatchroms(chromosomes: list) -> str:
+    """Formats a list of chromosomes for call to samtools."""
+    ## return the formated list
+    return ' '.join(chromosomes) if chromosomes else ''
+
 ## Ftn for filtering primary
-def getprimary(inbam,mapq,threads,outbam):
+def getprimary(inbam,mapq,threads,outbam,chroms=None):
     """Formats a samtools view command with the -e flag to return primary aligments from an input bam file (inbam) at a given mapping quality (mapq) and returns aligments within an output bam file (outbam)."""
     ## Return the samtools commands 
-    return f'samtools view -@ {threads} -f 3 -F 1024 -b {inbam} -e "!([XA] || [SA]) && mapq>={mapq}" | samtools sort -@ {threads} - -o {outbam} -O BAM --write-index\n'
+    return f'samtools view -@ {threads} -f 3 -F 1024 -b {inbam} -e "!([XA] || [SA]) && mapq>={mapq}" {formatchroms(chroms)} | samtools sort -@ {threads} - -o {outbam} -O BAM --write-index\n'
 
 ## ------------------------------------------------------- HIC FUNCTIONS ---------------------------------------------------------------------- ## 
 ## Ftn for fetching cigar string
@@ -285,7 +372,7 @@ def getmatchsum(cigartuples):
         ## Add to match sum 
         match_sum += c
     ## Return the match sum
-    return match_sum
+    return int(match_sum)
 
 ## Ftn for parsing the correct split of an input record
 def correctsplit(pyrecs):
@@ -295,6 +382,7 @@ def correctsplit(pyrecs):
         cigar = getcigar(rec)
         match_summed = getmatchsum(cigar)
         mapped_correctly.append(match_summed)
+    ## Gather the min index of ht emapped correctly 
     min_rec_idx = mapped_correctly.index(min(mapped_correctly))
     ## Return the record with the minimum matching positional index
     return pyrecs[min_rec_idx]
@@ -310,38 +398,4 @@ def strand(orientation):
     """Returns a -1 or 1 if the orientation is reversed (True) or not (False)."""
     ## return the orientation 
     return -1 if orientation else 1
-
-## Ftn for orienting a pair of reads
-def orderpair(recA,recB):
-    """Orders input records A and B by reference position."""
-    ## If the reads on the same chormosome 
-    if (recA.reference_id == recB.reference_id):
-        ## If the position of A is less than or equal to B
-        if recA.pos <= recB.pos:
-            rec1, rec2 = recA, recB
-        else: ## otherwise make B the first
-            rec1, rec2 = recB, recA 
-    else: ## If the reads are on different chromosomes 
-        if recA.reference_id < recB.reference_id: 
-            rec1, rec2 = recA, recB
-        else: ## Otherwise make record B the first 
-            rec1, rec2 = recB, recA 
-    ## Return the ordered recs
-    return rec1, rec2 
-
-## Ftn for formating pyrec(s) in a line seen in pair-end bed file
-def bamtobedpe(pyrecA,pyrecB):
-    """Gathers and formats mapping information for an input pair of reads stored as py-records from py-bam object."""
-    ## Order the records, left to right. 
-    pyrec1, pyrec2 = orderpair(pyrecA,pyrecB)
-    ## Gather the alignment information for input pair of reads
-    qname            = pyrec1.qname                                           ## set the read name
-    mapq1, mapq2     = pyrec1.mapq, pyrec2.mapq                               ## Mapping quality
-    chr1, chr2       = pyrec1.reference_name, pyrec2.reference_name           ## Reference name
-    chrn1, chrn2     = pyrec1.reference_id, pyrec2.reference_id               ## Reference id 
-    left1, left2     = pyrec1.pos, pyrec2.pos                                 ## chromosome position, start from left
-    right1, right2   = left1 + pyrec1.qlen, left2+pyrec2.qlen                 ## end position (adding read length to start)
-    strand1, strand2 = strand(pyrec1.is_reverse), strand(pyrec2.is_reverse)   ## Format strand 
-    ## Format and return the row
-    return f'{chr1} {chrn1} {left1} {right1} {mapq1} {strand1} {chr2} {chrn2} {left2} {right2} {mapq2} {strand2} {qname}'
-## End of file 
+## End fo file

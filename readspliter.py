@@ -47,17 +47,6 @@ B_help = "Path to input bam file from Hi-C experiment to split on genomic region
 M_help = "Name of the mitochondrial contig (default: %s)."%mito_contig
 
 ## ------------------------------------------- DEFINE FUNCTIONS ------------------------------------------------ ##
-## Set ftn for making bam file names
-#def outnames(inbam,mito):
-#    """Format and return the name of output txt file names for read names from input bam file."""
-#    ## Format the name of output files 
-#    name_mapd_txt = splitbam(inbam) + '.mapped.txt'                       ## The output bam name
-#    name_plac_txt = splitbam(inbam) + '.placed.txt'                       ## The placed reads (one mate mapped) bam file  
-#    name_mito_txt = (splitbam(inbam) + f'.{mito}.txt') if mito else None  ## The mitochondrial mapped reads
-#    name_unmp_txt = splitbam(inbam) + '.unmapped.txt'                     ## The unmapped read pairs txt file
-#    ## Return names
-#    return name_mapd_txt, name_plac_txt, name_mito_txt, name_unmp_txt
-
 ## Ftn for making table 
 def recordstable(pyobj, colnames = ['Readname','Isread1','Unmapped','Chromosome','Mapq']):
     """Generates a table of basic information from pyrces, including query name, is read one, and if pairs are unmapped."""

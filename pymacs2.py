@@ -20,6 +20,9 @@ Los Alamos, NM 87545
 croth@lanl.gov
 """
 ## ------------------------------------------------------------- MACS2 Functions ----------------------------------------------------------------- ## 
+## Load in pandas 
+import pandas as pd 
+
 ## Ftn for formating length parameter
 def formatlen(minlen):
     """Formats and returns the max length flag and parameter for a call to macs2."""
@@ -78,7 +81,7 @@ def peakattack(inbams,n,report,broad=False,outdir='./macs2',gsize='hs',mg=None,m
     ## Add the additional optsions 
     opts = opts + (' ' + extraoptions if extraoptions else '')
     ## Format the macs2 callpeak command
-    return [f'macs2 callpeak {formatinput(inbams)} {formatcontrol(incontrols)} -n {n} -g {gsize} -f BAMPE --outdir {outdir} {opts} {formatgap(mg)} {formatlen(ml)} 2>> {report}\n',f'echo Finished calling {sjoin(inbams)} with macs2 >> {report}\n']
+    return [f'macs2 callpeak {formatinput(inbams)} {formatcontrol(incontrols)} -n {n} -g {gsize} -f BAMPE --outdir {outdir} {opts} {formatgap(mg)} {formatlen(ml)} 2>> {report}\n',f'echo Finished calling peaks in {sjoin(inbams)} with macs2 >> {report}\n']
 
 ## Set the narrow peak names
 peaknames = ['Chrom','Start','End','Name','Score','Strand','Fold_change','-log10pvalue','-log10qvalue','Sumpos']
@@ -119,13 +122,12 @@ def makemap(inbam):
 description = 'Calculates the fraction of reads within peaks from input bam and bed files.'
 
 ## Set defaults
-savepath, dplace = './frip.stats.csv', 4
+savename, dplace = './frip.stats.csv', 4
 
 ## Set help messages
 b_help = "Path(s) to input BAM files."
 p_help = "Path(s) to input peak (BED) files from macs2."
-r_help = "Short name of run used in analysis (Default: None)." 
-s_help = "Path and name of output diagnostic statistics (Default when short name is not provided: %s)."%savepath
+s_help = "Path and name of output diagnostic statistics."
 d_help = "Decimal place used to calcualte and save statistics (Default: %s)."%dplace
 
 ## ----------------------------------------------- MAIN EXECUTABLE --------------------------------------------------- ## 
@@ -133,13 +135,15 @@ d_help = "Decimal place used to calcualte and save statistics (Default: %s)."%dp
 if __name__ == "__main__":
     ## ------------------------------------------- MODULE LOADING ---------------------------------------------------- ## 
     ## Load in pandas and arg parser
-    import pandas as pd, argparse 
+    import argparse 
 
     ## Ftn for parsing files 
-    from slurpy import sortglob, aligndir, macs2dir, diagdir
+    from defaults import sortglob, aligndir, macs2dir, diagdir
 
     ## Load bam ftn 
     from pysamtools import loadbam, isbam, hasix
+
+    ## load in path exists ftn from 
 
     ## ------------------------------------------ PARSER SETTING ---------------------------------------------------- ## 
     ## Set parser
@@ -148,7 +152,6 @@ if __name__ == "__main__":
     ## Add optional arguments
     parser.add_argument("-b", "--bam-files",  dest="b", required=False, type=list, help=b_help, default=[],nargs='+')
     parser.add_argument("-p", "--bed-files",  dest="p", required=False, type=list, help=p_help, default=[],nargs='+')
-    parser.add_argument("-r", "--run-name",   dest="r", required=False, type=str,  help=r_help, default=None        )   
     parser.add_argument("-s", "--save-path",  dest="s", required=False, type=str,  help=s_help, default=None        )  
     parser.add_argument("-d", "--decimals",   dest="d", required=False, type=int,  help=d_help, default=dplace      )
 
@@ -157,25 +160,16 @@ if __name__ == "__main__":
 
     ## ---------------------------------------- VARIABLE SETTING ---------------------------------------------------- ## 
     ## Gather inputs 
-    bams_paths, peak_paths, run_name, save_path, dplace = args.b, args.p, args.r, args.s, args.d
+    bams_paths, peak_paths, save_path, dplace = args.b, args.p, args.s, args.d
 
-    ## Re-assign bam paths form the local aligned dir 
-    if len(bams_paths):
-        pass 
-    else: ## Gather the primary mapped bam files from the aligned dir if run name was passed 
-        bams_paths = sortglob(f'./{aligndir}/{run_name}*.primary.*.bam') if run_name else []
+    ## Re-assign bam paths form the local aligned dir by gathering the primary mapped bam files from the aligned dir if run name was passed 
+    bams_paths = bams_paths if len(bams_paths) else sortglob(f'./{aligndir}/*.primary.*.bam') 
 
-    ## Re-assign bed paths from local macs2 dirc
-    if len(peak_paths):
-        pass 
-    else: ## if we were passed a run name, gather the peaks from the macs2 dir
-        peak_paths = sortglob(f'./{macs2dir}/{run_name}*_peaks.*Peak') if run_name else []
+    ## Re-assign bed paths from local macs2 dir if we were passed a run name, gather the peaks from the macs2 dir
+    peak_paths = peak_paths if len(peak_paths) else sortglob(f'./{macs2dir}/*_peaks.*Peak') 
 
     ## Reset the save path if none was given 
-    if save_path: 
-        pass 
-    else: ## if not, and run name was given, define the save path or default to the current path
-        save_path = f'./{diagdir}/{run_name}.frip.stats.csv' if run_name else savepath
+    save_path = save_path if save_path else f'./{diagdir}/{savename}' 
 
     ## Check we have paths 
     assert len(bams_paths), "ERROR: No bam files were detected!"
@@ -222,7 +216,7 @@ if __name__ == "__main__":
     ## Format into a df
     peak_info = pd.DataFrame(peak_info,columns = ['Peak File','Summits','Peaks','FRiP','BP'])
     ## Calculate the perecnt genome
-    peak_info['Percent'] = round(peak_info.BP/genomesize,dplace)
+    peak_info['Percent'] = round(100*peak_info.BP/genomesize,dplace)
     ## Save the peak info
     peak_info.to_csv(save_path,index=False)
 ## End of file 

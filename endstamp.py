@@ -31,11 +31,21 @@ from pysamtools import writetofile
 
 ## ------------------------------------------ Input Variables ------------------------------------------ ##
 ## Gather the file name, the start time stamp from input and calculate the end time stamp 
-filename,sstamp,estamp = sys.argv[1], int(sys.argv[2]), round(time.time())
+filename,sstamp,estamp = sys.argv[1], float(sys.argv[2]), time.time()
+
+## Format the start time stamp 
+dt1 = datetime.fromtimestamp(sstamp)
+
+## Format the end time stamp
+dt2 = datetime.fromtimestamp(estamp)
 
 ## Calculate delta of time stamps and then the approx run time
-runtime = datetime.utcfromtimestamp(estamp - sstamp).strftime('%Y-%m-%d %H:%M:%S').split(' ')[-1]
+runtime = dt2 - dt1 
+#runtime = datetime.utcfromtimestamp(estamp - sstamp).strftime('%Y-%m-%d %H:%M:%S').split(' ')[-1]
 
 ## Write the timestamp to file 
-writetofile(filename,[f'START TIME: {sstamp}\n',f'END TIME: {estamp}\n',f'RUN TIME: {runtime}'],False)
+writetofile(filename,
+    ['START TIME: %s %s\n'%(dt1,sstamp),
+     'END TIME: %s %s\n'%(dt2,estamp),
+     'RUN TIME: %s %s\n'%(runtime,' ')],False)
 ## End of file 

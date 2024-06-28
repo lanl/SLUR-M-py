@@ -27,10 +27,11 @@ def bwaecho(o,l=None):
     return f'echo Finished alignment and indexing of split: {o} > {l}' if l else ''
 
 ## Ftn for mapping reads in hic-mode as suggested by phase genomics and juicer
-def bwamem_hic(r1,r2,ref,outbam,log,vmode=1,threads=4,opts='-5SPM'):
+def bwamem_hic(r1,r2,ref,outsam,log,vmode=1,threads=4,opts='-5SPM'):
     """Formats a bwa mem command for paired-end hi-c sequencing reads."""
     ## Set the bwa mem option in hic mode and format the bwa mem call, submit to shell via submit command
-    return [f'bwa mem {opts} -v {vmode} -t {threads} {ref} {r1} {r2} 2>> {log} | samtools view -Shb -@ {threads} | samtools sort -@ {threads} - -o {outbam} -O BAM --write-index\n', bwaecho(outbam,log)]
+    #return [f'bwa mem {opts} -v {vmode} -t {threads} {ref} {r1} {r2} 2>> {log} | samtools view -Shb -@ {threads} | samtools sort -@ {threads} - -o {outbam} -O BAM --write-index\n', bwaecho(outbam,log)]
+    return [f'bwa mem {opts} -v {vmode} -t {threads} {ref} {r1} {r2} > {outsam}\n', bwaecho(outsam,log)]
 
 ## Ftn for formating a bwa mem for a single read file
 def bwamem_single(read,ref,outbam,log,vmode=1,threads=4):
