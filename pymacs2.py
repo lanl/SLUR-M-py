@@ -23,6 +23,9 @@ croth@lanl.gov
 ## Load in pandas 
 import pandas as pd 
 
+## Load in scripts dir 
+from defaults import scriptsdir
+
 ## Ftn for formating length parameter
 def formatlen(minlen):
     """Formats and returns the max length flag and parameter for a call to macs2."""
@@ -81,7 +84,7 @@ def peakattack(inbams,n,report,broad=False,outdir='./macs2',gsize='hs',mg=None,m
     ## Add the additional optsions 
     opts = opts + (' ' + extraoptions if extraoptions else '')
     ## Format the macs2 callpeak command
-    return [f'macs2 callpeak {formatinput(inbams)} {formatcontrol(incontrols)} -n {n} -g {gsize} -f BAMPE --outdir {outdir} {opts} {formatgap(mg)} {formatlen(ml)} 2>> {report}\n',f'echo Finished calling peaks in {sjoin(inbams)} with macs2 >> {report}\n']
+    return [f'macs2 callpeak {formatinput(inbams)} {formatcontrol(incontrols)} -n {n} -g {gsize} -f BAMPE --outdir {outdir} {opts} {formatgap(mg)} {formatlen(ml)} 2>> {report}\n', f'{scriptsdir}/myecho.py Finished calling peaks in {sjoin(inbams)} with macs2 >> {report}\n']
 
 ## Set the narrow peak names
 peaknames = ['Chrom','Start','End','Name','Score','Strand','Fold_change','-log10pvalue','-log10qvalue','Sumpos']
@@ -142,8 +145,6 @@ if __name__ == "__main__":
 
     ## Load bam ftn 
     from pysamtools import loadbam, isbam, hasix
-
-    ## load in path exists ftn from 
 
     ## ------------------------------------------ PARSER SETTING ---------------------------------------------------- ## 
     ## Set parser

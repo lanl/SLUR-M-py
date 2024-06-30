@@ -17,6 +17,8 @@ sys
 json
 multiprocessing
 datetime
+biopython
+dask
 """
 ## Needed stand alones 
 """
@@ -37,6 +39,9 @@ from datetime import datetime
 
 ## Load in glob
 from glob import glob 
+
+## Load in SeqIO
+from Bio import SeqIO
 
 ## Bring in basename, get file size, and path-exists 
 from os.path import isfile, basename, exists, getsize 

@@ -278,7 +278,7 @@ def fastdry(r1:str, r2:str, report:str) -> str:
     ## reformat the report 
     report = report if report.split('.')[-1] == 'txt' else report + '.txt'
     ## Format and return the echo command
-    return f'echo Finished filtering and splitting on: {r1} {r2} >> {report}' + '\n'
+    return f'{scriptsdir}/myecho.py Finished filtering and splitting on: {r1} {r2} {report}\n'
 
 ## Ftn for formating report
 def reportname(inbam:str, script:str) -> str:
@@ -304,7 +304,7 @@ def markduplicates(inbam:str, threads:int, script='mark') -> tuple:
     ## Format the output bams and the report name 
     outbam, report = f'{aligndir}/{basenobam(inbam)}.marked.bam', reportname(inbam,script) 
     ## Format the sam-blaster and echo command
-    blast_command, echo_command = samblaster(inbam,outbam,report,threads), f'echo Finished marking duplicates in {outbam} >> {report}\n'
+    blast_command, echo_command = samblaster(inbam,outbam,report,threads), f'{scriptsdir}/myecho.py Finished marking duplicates in {outbam} {report}\n'
     ## Return the samblaster command and ecco chommand 
     return outbam, [blast_command, echo_command], report
 
@@ -312,7 +312,7 @@ def markduplicates(inbam:str, threads:int, script='mark') -> tuple:
 def splitecho(inbam:str, report: str, script:str) -> str:
     """Formats an echo statment for the split command."""
     ## Return the formated command 
-    return f'echo Finished splitting {inbam} using {script} >> {report}\n'
+    return f'{scriptsdir}/myecho.py Finished splitting {inbam} using {script} {report}\n'
 
 ## Write ftn for making a directory
 def dirmaker(dirpath:str):
@@ -336,7 +336,7 @@ def headpath(inpath:str) -> str:
 def bwaindex(refpath:str,script='index') -> tuple:
     """Formats command to index a reference via bwa."""
     ## return the index commands
-    return [f'bwa index {refpath}\n', f'echo Finished indexing reference on path {refpath} > {reportname(refpath,script)}\n'], reportname(refpath,script)
+    return [f'bwa index {refpath}\n', f'{scriptsdir}/myecho.py Finished indexing reference on path {refpath} {reportname(refpath,script)}\n'], reportname(refpath,script)
 
 ## Ftn for formating job ids
 def formatids(cdf:pd.DataFrame, op:list, joinon=',') -> str:
@@ -396,7 +396,7 @@ def mergebam(bam:str, wildcard:str, threads:int, script='merge') -> tuple:
     ## Format report name and the merge-bam command
     report, merge_bam_command = reportname(outbam,script), f'samtools merge -f -@ {threads} -o {outbam} --write-index {bamtmpdir}/{wildcard}\n'
     ## Format the echo command and count command 
-    echo_merge_command = f'echo Finished merging bam files into {outbam} >> {report}\n'
+    echo_merge_command = f'{scriptsdir}/myecho.py Finished merging bam files into {outbam} {report}\n'
     ## Return the formated merge command
     return [merge_bam_command,echo_merge_command], report
 
@@ -408,7 +408,7 @@ def pandacat(infiles:str, outfile:str, rmheader=False, script='concat') -> tuple
     ## Set the skip head ftn
     skiphead = '--skipheader' if rmheader else ''
     ## Return the formated commands
-    return [f'{scriptsdir}/pandacat.py -i {infiles} -o {outfile} {skiphead}\n',f'echo Finished concatenating files into file: {outfile} >> {report}\n'], report 
+    return [f'{scriptsdir}/pandacat.py -i {infiles} -o {outfile} {skiphead}\n', f'{scriptsdir}/myecho.py Finished concatenating files into file: {outfile} {report}\n'], report 
 
 ## Ftn for filtering bam fie 
 def filterbam(inbam:str, M:str, threads:int, chrlist:list, script='filter') -> tuple:
@@ -416,7 +416,7 @@ def filterbam(inbam:str, M:str, threads:int, chrlist:list, script='filter') -> t
     ## Format the report name and out bam name 
     report, outbam = reportname(inbam,script), splitbam(inbam) + f'.primary.q{M}.bam'
     ## Format filter command and the echo command 
-    bam_filter_command, echo_command = getprimary(inbam,M,threads,outbam,chroms=chrlist), f'echo Finished filtering {inbam} at mapping quality of {M} >> {report}\n'
+    bam_filter_command, echo_command = getprimary(inbam,M,threads,outbam,chroms=chrlist), f'{scriptsdir}/myecho.py Finished filtering {inbam} at mapping quality of {M} {report}\n'
     ## Format and return commands
     return outbam, [bam_filter_command, echo_command], report
 

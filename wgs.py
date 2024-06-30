@@ -28,7 +28,7 @@ squeue -u croth | grep 'croth' | awk '{print $1}' | xargs -n 1 scancel
 """
 ## List slurpy command for VERO analysis
 """
-./SLURPY/wgs.py -r /panfs/biopan04/epier/Cryo_ATAC/GreenMVA_Ref/Chlorocebus_sabeus_mva.fasta -M NC_008066.1 
+./SLURPY/wgs.py -r ../Cryo_ATAC/GreenMVA_Ref/Chlorocebus_sabeus_mva.fasta -M NC_008066.1 
 
 """
 
@@ -39,7 +39,7 @@ from defaults import *
 ## Load in ftns from other libraries
 from pysamtools import checksam, writetofile, txttobam, outnames
 ## Bring in ftns from atac-seq analysis 
-from atac import fastpeel, prepbwamem, splitcommand
+from peaks import fastpeel, prepbwamem, splitcommand
 
 ## Set description   
 basic_descr = "Processing pipeline for paired-end sequencing data."
@@ -427,7 +427,7 @@ if __name__ == "__main__":
     ## Format the fragment histogram distribution for these samples 
     frag_calc_commands = f'{scriptsdir}/fragmentdist.py -b ./{aligndir}/*mapped*.bam ' + save_dist_name
     ## List the count commands 
-    count_commands = [f'{scriptsdir}/countbams.py {run_name}\n', frag_calc_commands, f'echo Finished counting bam files in {aligndir} dir. >> {count_report}\n']
+    count_commands = [f'{scriptsdir}/countbams.py {run_name}\n', frag_calc_commands,  f'{scriptsdir}/myecho.py Finished counting bam files in {aligndir} dir. {count_report}\n']
     ## Wriet the coutn command to file
     writetofile(counting_filename,sbatch(counting_filename,1,the_cwd) + count_commands, debug)
     ## Append the counting command
@@ -442,7 +442,7 @@ if __name__ == "__main__":
     timestampsh      = f'{comsdir}/time.stamp.sh'                       ##     Name of the .sh bash file 
     timestamp_report = reportname(run_name,f'timestamp.{stamp}')        ##     Name of the log to report to 
     ## Formath time stamp and echo commands 
-    times_commands = [f'{scriptsdir}/endstamp.py {timestamp_file} {stamp}\n', f'echo Finished SLURPY run of sample: {run_name}. >> {timestamp_report}\n']
+    times_commands = [f'{scriptsdir}/endstamp.py {timestamp_file} {stamp}\n',  f'{scriptsdir}/myecho.py Finished SLURPY run of sample: {run_name}. {timestamp_report}\n']
     ## Format the command file name and write to sbatch, we will always ask the timestamp to run even in debug mode 
     writetofile(timestampsh, sbatch(timestampsh,1,the_cwd) + times_commands, False)
     ## Append the timestamp command to file

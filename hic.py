@@ -28,7 +28,7 @@ squeue -u croth | grep 'croth' | grep gpu | grep "(DependencyNeverSatisfied)" | 
 """ 
 ## List slurpy command for VERO analysis
 """
-./SLURPY/hic.py -r /panfs/biopan04/epier/Cryo_ATAC/GreenMVA_Ref/Chlorocebus_sabeus_mva.fasta -M NC_008066.1 -G ../Chlorocebus_sabeus_mva.genome.sizes.autosome.filtered.bed --merge 
+./SLURPY/hic.py -r ../Cryo_ATAC/GreenMVA_Ref/Chlorocebus_sabeus_mva.fasta -M NC_008066.1 -G ../Chlorocebus_sabeus_mva.genome.sizes.autosome.filtered.bed --merge 
 
 """
 
@@ -88,7 +88,7 @@ def hicspliter(inpath:str ,outpath:str, chrom:str, chromosomes:list, dedup:bool,
     chromosomes = ' '.join(chromosomes)
     ## List the commands 
     command_lines = [f'{scriptsdir}/splithic.py -i {inpath} -o {outpath} -c {chrom} -g {chromosomes}{remove_du}\n', 
-                     f'echo Finished duplicate filtering and spliting Hi-C contacts by chromosome for {chrom} from {inpath}. >> {report}\n']
+                     f'{scriptsdir}/myecho.py Finished duplicate filtering and spliting Hi-C contacts by chromosome for {chrom} from {inpath}. {report}\n']
     ## Return the command lines and report  
     return command_lines, report 
 
@@ -98,7 +98,7 @@ def hicsorter(inpaths:list, outname:str, script='sort') -> tuple:
     report = reportname(inpaths[0],script)
     ## Format and return the call to the hic sort command and report echo 
     command_lines = [f'{scriptsdir}/sorthic.py -i ' +' '.join(inpaths) + f' -o {outname}\n', 
-                     f'echo Finished sorting Hi-C contacts by chromosome from {len(inpaths)} files. >> {report}\n']
+                     f'{scriptsdir}/myecho.py Finished sorting Hi-C contacts by chromosome from {len(inpaths)} files. {report}\n']
     ## Return the commands and the report 
     return command_lines, report 
 
@@ -111,7 +111,7 @@ def juicerpre(intxt:str, outhic:str, Xmemory:int, jarfile:str, threadcount:int, 
     report = reportname(outhic+'.bam',script)
     ## Set the java command for the passed juicer jar file 
     prestr = ['java -Xmx%sm -Xms%sm -jar %s pre -j %s -r %s %s %s %s\n'%(Xmemory,Xmemory,jarfile,threadcount,','.join(map(str,bins)),intxt,outhic,genomepath),
-              f'echo Finished formating Hi-C contacts into a .hic file on path: {outhic} >> {report}\n']
+              f'{scriptsdir}/myecho.py Finished formating Hi-C contacts into a .hic file on path: {outhic} {report}\n']
 
     ## Return the pre and report
     return prestr, report
@@ -413,10 +413,10 @@ if __name__ == "__main__":
             ##      PRE FILTERING (post bwa) 
             ## --------------------------------------------------------------------------------------------------------------------------------------------------------- ##
             ## Format prefilter report name, commands, and file name 
-            pre_filt_repo = reportname(sbam,'pre')                                                  ##      Generate report file name
-            pre_filt_coms = [f'{scriptsdir}/prefilter.py -s {sbam} -M {mito} -Z {chunk_size}\n',    ##      Format the commands for pre filtering
-                             f'echo Finished prefiltering on {sbam} >> {pre_filt_repo}']            ##  
-            pre_filt_file = f'{comsdir}/prefilt.{basenobam(sbam)}.sh'                               ##      Set teh pre filt bash file name 
+            pre_filt_repo = reportname(sbam,'pre')                                                        ##      Generate report file name
+            pre_filt_coms = [f'{scriptsdir}/prefilter.py -s {sbam} -M {mito} -Z {chunk_size}\n',          ##      Format the commands for pre filtering
+                             f'{scriptsdir}/myecho.py Finished prefiltering on {sbam} {pre_filt_repo}']   ##  
+            pre_filt_file = f'{comsdir}/prefilt.{basenobam(sbam)}.sh'                                     ##      Set teh pre filt bash file name 
             ## Write the above to file
             writetofile(pre_filt_file, sbatch(pre_filt_file,2,the_cwd)+pre_filt_coms, debug)
             ## Append to command file
@@ -431,7 +431,7 @@ if __name__ == "__main__":
             ## Format postfilter report name, commands, and file name 
             post_filt_repo = reportname(sbam,'post')
             post_filt_coms = [f'{scriptsdir}/postfilter.py -t {tsam} -r {reference_path} -Q {mapq} -D {set_distance} -Z {chunk_size}\n', 
-                              f'echo Finished postfiltering on {tsam} >> {post_filt_repo}']
+                              f'{scriptsdir}/myecho.py Finished postfiltering on {tsam} {post_filt_repo}']
             post_filt_file = f'{comsdir}/postfilt.{basenobam(tsam)}.sh'
             ## Write the above to file
             writetofile(post_filt_file, sbatch(post_filt_file,2,the_cwd)+post_filt_coms, debug)
@@ -447,7 +447,7 @@ if __name__ == "__main__":
             ## Format hic-filter report name, commands, and file name 
             hic_filt_repo = reportname(sbam,'filter')
             hic_filt_coms = [f'{scriptsdir}/filterhic.py -t {fsam} -r {reference_path} -l {enzyme} -C {circle_distance} -E {error_distance} -Z {chunk_size}\n',
-                             f'echo Finished postfiltering on {fsam} >> {hic_filt_repo}']
+                             f'{scriptsdir}/myecho.py Finished postfiltering on {fsam} {hic_filt_repo}']
             hic_filt_file = f'{comsdir}/hicfilt.{basenobam(fsam)}.sh'
             ## Write the above to file
             writetofile(hic_filt_file, sbatch(hic_filt_file,2,the_cwd)+hic_filt_coms, debug)
@@ -552,7 +552,7 @@ if __name__ == "__main__":
     counting_filename = f'{comsdir}/count.hic.{run_name}.sh'         ##     Name the bash command file 
     count_report      = reportname(f'{aligndir}/hic.bam','count')    ##     Set the report name 
     ## List the count commands 
-    count_commands = [f'{scriptsdir}/counthic.py {run_name}\n', f'echo Finished counting bam files in {aligndir} dir. >> {count_report}\n']
+    count_commands = [f'{scriptsdir}/counthic.py {run_name}\n', f'{scriptsdir}/myecho.py Finished counting bam files in {aligndir} dir. {count_report}\n']
     ## write the count command to file
     writetofile(counting_filename,sbatch(counting_filename,1,the_cwd) + count_commands, debug)
     ## append the counting command
@@ -567,7 +567,7 @@ if __name__ == "__main__":
     timestampsh      = f'{comsdir}/time.stamp.sh'                    ##     Name of the .sh bash file 
     timestamp_report = reportname(run_name,f'timestamp.{stamp}')     ##     Name of the log to report to 
     ## Formath time stamp and echo commands 
-    times_commands = [f'{scriptsdir}/endstamp.py {timestamp_file} {stamp}\n', f'echo Finished SLURPY run of sample: {run_name}. >> {timestamp_report}\n']
+    times_commands = [f'{scriptsdir}/endstamp.py {timestamp_file} {stamp}\n', f'{scriptsdir}/myecho.py Finished SLURPY run of sample: {run_name}. {timestamp_report}\n']
     ## Format the command file name and write to sbatch, we will always ask the timestamp to run even in debug mode 
     writetofile(timestampsh, sbatch(timestampsh,1,the_cwd) + times_commands, False)
     ## Append the timestamp command to file

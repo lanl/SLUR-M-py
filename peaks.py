@@ -28,7 +28,7 @@ squeue -u croth | grep 'croth' | awk '{print $1}' | xargs -n 1 scancel
 """
 ## List slurpy command for VERO analysis
 """
-./SLURPY/atacseq.py -r /panfs/biopan04/epier/Cryo_ATAC/GreenMVA_Ref/Chlorocebus_sabeus_mva.fasta -M NC_008066.1 -g 2744115311 -G ../../Chlorocebus_sabeus_mva.genome.sizes.autosome.filtered.bed
+./SLURPY/atacseq.py -r ../Cryo_ATAC/GreenMVA_Ref/Chlorocebus_sabeus_mva.fasta -M NC_008066.1 -g 2744115311 -G ../../Chlorocebus_sabeus_mva.genome.sizes.autosome.filtered.bed
 
 """
 
@@ -37,7 +37,7 @@ squeue -u croth | grep 'croth' | awk '{print $1}' | xargs -n 1 scancel
 ## Load in ftns and variables from defaults
 from defaults import *
 ## Load in ftns from other libraries
-from pysamtools import checksam, writetofile, txttobam, outnames, bambyreadname
+from pysamtools import checksam, writetofile, txttobam, outnames, bambyreadname, chromdf
 ## Bring in bwa mem ftn for atac-seq
 from pybwatools import bwamem_paired
 
@@ -131,6 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("-B", "--parallel-bwa",  dest="B", type=int,  required=False, help = B_help, metavar = parallelbwa,          default = parallelbwa)
     parser.add_argument("-P", "--partition",     dest="P", type=str,  required=False, help = P_help, metavar = part,                 default = part       ) 
     parser.add_argument("-M", "--mtDNA",         dest="M", type=str,  required=False, help = M_help, metavar = mito,                 default = mito       )
+    parser.add_argument("-X", "--exclude",        dest="X", nargs='+', required=False, help = X_help, metavar = 'chrX, chrY ...',    default = []         )
     parser.add_argument("-Q", "--map-threshold", dest="Q", type=int,  required=False, help = Q_help, metavar = map_q_thres,          default = map_q_thres)
     parser.add_argument("-R", "--rerun-from",    dest="R", type=str,  required=False, help = R_help, metavar = 'step',               default = None       )
     parser.add_argument("-q", "--fastq",         dest="q", type=str,  required=False, help = q_help, metavar = '.fastq.gz',          default = fends      )
@@ -172,6 +173,7 @@ if __name__ == "__main__":
     partition       = inputs.P       ##     Set the partition 
     mito            = inputs.M       ##     Set the mito contig name 
     mapq            = inputs.Q       ##     Set the mapping quality threshold 
+    excludes        = inputs.X       ##     List of chromosomes to exclude from analysis 
     rerun           = inputs.R       ##     Setp to rerun pipeline from 
     fend            = inputs.q       ##     End of the input fastq files 
                                      ##
@@ -233,15 +235,45 @@ if __name__ == "__main__":
 
     ##      CHROMOSOME GATHERING 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
-    ## If a path was passed 
-    if pathtochrom: ## Check that it exists 
-        assert fileexists(pathtochrom), "ERROR: A non-existant input path for the list of chromosomes was passed!"
+        ## Inform the user we are gathering chromosomes
+    print(chromgathering)
+    ## Set fai path
+    fai_path = reference_path + '.fai'
+    ## Set new path to chrom
+    newpathtochrom = aligndir + '/' + reference_path.split('/')[-1].split('.fa')[0] + '.txt'
+    ## If a path of chrom file was passed and exists 
+    if pathtochrom and fileexists(pathtochrom): 
         ## Set the list of chromosomes 
-        chrlist = [c for c in readtable(pathtochrom)[0].values if c != mito]
+        chrlist = readtable(pathtochrom)[0].values
+    elif fileexists(fai_path):
+        ## Patch path
+        pathtochrom = newpathtochrom
+        ## Load in the fai file fromt he reference 
+        chrbed = readtable(fai_path)
+        ## SAve out the bed file 
+        chrbed[[0,1]].to_csv(pathtochrom,sep=' ',index=False,header=False)
+        ## Set the list of chromosomes 
+        chrlist = chrbed[0].values
+    ## Make a dataframe of the files 
     else: ## Bring in the list of chromosomes from the fasta file
-        chrlist = None 
+        ## Patch chrom 
+        pathtochrom = newpathtochrom
+        ## IF, the path to chrom form the reference file path already exists 
+        if fileexists(pathtochrom):
+            chrbed = readtable(pathtochrom)
+        else:
+            ## Gather tupes of chromosome ids and lengths 
+            chrbed = chromdf(reference_path)
+            ## Save out the chrbed as an .txt file for next time or further analysis 
+            chrbed.to_csv(pathtochrom,sep=' ',index=False,header=False)
+        ## Set the list of chromosomes 
+        chrlist = chrbed[0].values
 
-
+    ## Expand exlcude list to include mitochondria contic 
+    excludes.append(mito)
+        
+    ## Remove mito
+    chrlist = [c for c in chrlist if (c not in excludes)]
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
@@ -497,7 +529,7 @@ if __name__ == "__main__":
     ##      COUNTING COMMANDS
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## List the count commands 
-    count_commands = [f'{scriptsdir}/countbams.py {run_name}\n', frag_calc_commands, f'echo Finished counting bam files in {aligndir} dir. >> {count_report}\n']
+    count_commands = [f'{scriptsdir}/countbams.py {run_name}\n', frag_calc_commands, f'{scriptsdir}/myecho.py Finished counting bam files in {aligndir} dir. {count_report}\n']
     ## Wriet the coutn command to file
     writetofile(counting_filename,sbatch(counting_filename,1,the_cwd) + count_commands, debug)
     ## Append the counting command
@@ -516,7 +548,7 @@ if __name__ == "__main__":
         ## Format the macs2 call report name
         macs2_report, macs2_filename = reportname(run_name,'macs2'), f'{comsdir}/macs2.{run_name}.sh'
         ## Format the command to macs2
-        macs2_commands = peakattack(filteredbams,run_name,macs2_report,gsize=gsize,broad=broadpeak,incontrols=chip_control) + [f'{scriptsdir}/pymacs2.py -s {diagdir}/{run_name}.frip.stats.csv\n',f'echo Finished calculating FrIP from macs2 >> {macs2_report}\n']
+        macs2_commands = peakattack(filteredbams,run_name,macs2_report,gsize=gsize,broad=broadpeak,incontrols=chip_control) + [f'{scriptsdir}/pymacs2.py -s {diagdir}/{run_name}.frip.stats.csv\n',f'{scriptsdir}/myecho.py Finished calculating FrIP from macs2 {macs2_report}\n']
         ## Write the macs2 commands to file
         writetofile(macs2_filename, sbatch(macs2_filename,1,the_cwd) + macs2_commands, debug)
         ## Append the macs2 command 
@@ -531,7 +563,7 @@ if __name__ == "__main__":
     timestampsh      = f'{comsdir}/time.stamp.sh'                       ##     Name of the .sh bash file 
     timestamp_report = reportname(run_name,f'timestamp.{stamp}')        ##     Name of the log to report to 
     ## Formath time stamp and echo commands 
-    times_commands = [f'{scriptsdir}/endstamp.py {timestamp_file} {stamp}\n', f'echo Finished SLURPY run of sample: {run_name}. >> {timestamp_report}\n']
+    times_commands = [f'{scriptsdir}/endstamp.py {timestamp_file} {stamp}\n', f'{scriptsdir}/myecho.py Finished SLURPY run of sample: {run_name}. {timestamp_report}\n']
     ## Format the command file name and write to sbatch, we will always ask the timestamp to run even in debug mode 
     writetofile(timestampsh, sbatch(timestampsh,1,the_cwd) + times_commands, False)
     ## Append the timestamp command to file

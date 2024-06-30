@@ -167,7 +167,9 @@ def debuglines(intxt):
         if (l[0] == '#'): 
             newlines.append(l)
         ## If it is an echo statment, leave it as is 
-        elif l.split(' ')[0]=='echo':
+        elif (l.split(' ')[0]=='echo'):
+            newlines.append('sleep 10\n'+l)
+        elif (l.split(' ')[0]=='myecho.py'):
             newlines.append('sleep 10\n'+l)
         else: ## Othewise, comment out the lines 
             newlines.append('##'+l)
