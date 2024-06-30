@@ -11,9 +11,13 @@ conda create -n bioenv
 
 ## Activate the environment
 conda activate bioenv 
+```
 
+After making a new conda environment install needed packages.
+
+```
 ## Use conda to install needed mods
-conda install numpy pandas matplotlib seaborn pysam samtools samblaster bwa macs2
+conda install numpy pandas matplotlib seaborn pysam samtools biopython dask samblaster bwa macs2
 ```
 
 If the above installation command hangs, we recommend removing macs2 from the list of libraries and trying again. Then installing macs2 via pip.
