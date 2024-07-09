@@ -1,5 +1,5 @@
 # SLURPY
-[SLUR(M)-py: A SLURM Powered Pythonic Pipeline for Parallel Processing of 3D (Epi)genomic Profiles](https://www.biorxiv.org/content/10.1101/2024.05.18.594827v1)
+[SLUR(M)-py: A SLURM Powered Pythonic Pipeline for Parallel Processing of 3D (Epi)genomic Profiles](https://www.biorxiv.org/content/10.1101/2024.05.18.594827v2)
 ## Setting up the computing environment
 Slurpy was developed using anaconda (python v 3.10.13). 
 We recommend using conda to manage the python environment needed by slurpy.
@@ -17,7 +17,10 @@ After making a new conda environment install needed packages.
 
 ```
 ## Use conda to install needed mods
-conda install numpy pandas matplotlib seaborn pysam samtools biopython dask samblaster bwa macs2
+conda install numpy pandas matplotlib seaborn dask 
+
+## Bring in mods from bioconda
+conda install -c bioconda biopython pysam samtools bwa samblaster macs2
 ```
 
 If the above installation command hangs, we recommend removing macs2 from the list of libraries and trying again. Then installing macs2 via pip.

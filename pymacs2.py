@@ -84,7 +84,7 @@ def peakattack(inbams,n,report,broad=False,outdir='./macs2',gsize='hs',mg=None,m
     ## Add the additional optsions 
     opts = opts + (' ' + extraoptions if extraoptions else '')
     ## Format the macs2 callpeak command
-    return [f'macs2 callpeak {formatinput(inbams)} {formatcontrol(incontrols)} -n {n} -g {gsize} -f BAMPE --outdir {outdir} {opts} {formatgap(mg)} {formatlen(ml)} 2>> {report}\n', f'{scriptsdir}/myecho.py Finished calling peaks in {sjoin(inbams)} with macs2 >> {report}\n']
+    return [f'macs2 callpeak {formatinput(inbams)} {formatcontrol(incontrols)} -n {n} -g {gsize} -f BAMPE --outdir {outdir} {opts} {formatgap(mg)} {formatlen(ml)} 2>> {report}\n', f'{scriptsdir}/myecho.py Finished calling peaks in {sjoin(inbams)} with macs2 {report}\n']
 
 ## Set the narrow peak names
 peaknames = ['Chrom','Start','End','Name','Score','Strand','Fold_change','-log10pvalue','-log10qvalue','Sumpos']

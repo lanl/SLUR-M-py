@@ -238,18 +238,18 @@ if __name__ == "__main__":
         ## Inform the user we are gathering chromosomes
     print(chromgathering)
     ## Set fai path
-    fai_path = reference_path + '.fai'
+    ann_path = reference_path + '.ann'
     ## Set new path to chrom
     newpathtochrom = aligndir + '/' + reference_path.split('/')[-1].split('.fa')[0] + '.txt'
     ## If a path of chrom file was passed and exists 
     if pathtochrom and fileexists(pathtochrom): 
         ## Set the list of chromosomes 
         chrlist = readtable(pathtochrom)[0].values
-    elif fileexists(fai_path):
+    elif fileexists(ann_path):
         ## Patch path
         pathtochrom = newpathtochrom
         ## Load in the fai file fromt he reference 
-        chrbed = readtable(fai_path)
+        chrbed = readann(ann_path)
         ## SAve out the bed file 
         chrbed[[0,1]].to_csv(pathtochrom,sep=' ',index=False,header=False)
         ## Set the list of chromosomes 
