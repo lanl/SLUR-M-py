@@ -624,12 +624,13 @@ g_metavar = 'bp'
 ##      INFO MESSAGES
 ## Set messages printed to user 
 directormaking  = 'INFO: Making local directories.'
-chromgathering  = 'INFO: Gathering chromosomes for processing.' 
 formatingfastq  = 'INFO: Formatting jobs.'
 
 ## --------------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 ##      ERROR MESSAGES
-## Write error message
+## Write error messages
+fastqserror = "ERROR: Unable to detect a fastqs directory holding fastq files!"
+missingfqs  = "ERROR: No fastq.gz files were detected!"
 not_sam_err = "ERROR: The detected version of samtools is not greater than or equal to v 1.15.1!\nPlease update samtools and try again."
 ## --------------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 ## End of file 

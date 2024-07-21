@@ -98,7 +98,22 @@ under contract number 89233218CNA000001 to Los Alamos National Laboratory (Triad
 
 
 
-## This comment should appear on line number 101
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## All three python scripts, wgs.py (this script), atac.py, and hic.py share the same start line number below (106)
 ## --------------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
@@ -139,6 +154,9 @@ if __name__ == "__main__":
     parser.add_argument("--merge",               dest="merge",  help = merge_help,    action = 'store_true')
 
     
+
+
+
     
     """
     Adding space here to match the line numbers across scripts; if I didn't mention that already.
@@ -185,6 +203,10 @@ if __name__ == "__main__":
 
 
 
+
+
+
+
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
@@ -221,32 +243,18 @@ if __name__ == "__main__":
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
-    ##      CHROMOSOME GATHERING 
-    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
-    """
-    We don't do any chromosome gathering nonsense in this script. 
-    """
-
-
-
-
-
-
-    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
-
-
-    ##      HARD RESTART 
+    ##      CONFIRM THE HARD RESTART 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## If there is a hard reset passed 
-    confirmreset(grouped_dirs) if hardreset else None 
+    confirmreset(grouped_dirs) if hardreset else None
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
-    ##      MORE MODULE LOADING 
+    ##      MORE MODULE LOADING (and time stamp setting)
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## Load in the list dir ftn 
     from os import getcwd as gcwd
-    ## Load in time mod 
+    ## Load in time mod
     import time 
     ## Set the unique time stamp
     stamp = time.time()
@@ -260,6 +268,8 @@ if __name__ == "__main__":
 
     ##      DIRECTORY MAKING & TIME STAMP SUBMISSION 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+    ## Let the user know we are making directories 
+    print(directormaking)
     ## Get the current working dir
     the_cwd = gcwd()
     ## If the run name is none
@@ -274,6 +284,20 @@ if __name__ == "__main__":
     bwaix_coms, bwaix_report = bwaindex(reference_path)
     ## Write the bwa index command and sbatch to file 
     writetofile(bwa_ix_jobname, sbatch(bwa_ix_jobname,1,headpath(reference_path)) + bwaix_coms, debug)
+    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+
+
+    ##      CHROMOSOME GATHERING
+    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+
+    """
+    Adding space here to hold line counts
+    """
+
+
+
+
+
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
@@ -304,6 +328,8 @@ if __name__ == "__main__":
 
     ##      FASTQ GATHERING
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+    ## Inform user we are formating jobs
+    print(formatingfastq)
     ## Gather the fastqs 
     in_fastqs = getfastqs(fastqdir+'/*.gz')
     ## Assert we have fastq files

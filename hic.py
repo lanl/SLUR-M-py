@@ -115,7 +115,6 @@ def juicerpre(intxt:str, outhic:str, Xmemory:int, jarfile:str, threadcount:int, 
 
     ## Return the pre and report
     return prestr, report
-
 ## --------------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
@@ -164,7 +163,6 @@ if __name__ == "__main__":
     parser.add_argument("--skip-dedup",           dest="mark",   help = mark_help,     action = 'store_true')
     parser.add_argument("--clean",                dest="clean",  help = clean_help,    action = 'store_true')
     parser.add_argument("--merge",                dest="merge",  help = merge_help,    action = 'store_true')
-
 
     ## Set the paresed values as inputs
     inputs = parser.parse_args()
@@ -222,7 +220,7 @@ if __name__ == "__main__":
     ##      INITILIZATION 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## Check that the fastq path exists
-    assert pathexists(fastqdir), "ERROR: Unable to detect a fastqs directory!"
+    assert pathexists(fastqdir), fastqserror
     ## Check the versions of samtools, the user email is an email and the experiment mode is one we know
     assert checksam(), not_sam_err 
     ## If needed reset that the fastp threads and splits such that they are a multiple of each
@@ -240,10 +238,10 @@ if __name__ == "__main__":
     if enzyme:
         assert enzyme.lower() in ['mboi', 'dpnii','sau3ai','hindiii','arima','none'], lib_error
 
-    ## Reset the library enzyme variable if the none option was passed
-    #enzyme = None if enzyme.lower() == 'none' else enzyme ## We don't want to do this 
+
 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+
 
     ##      CONFIRM THE HARD RESTART 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
@@ -276,7 +274,6 @@ if __name__ == "__main__":
     the_cwd = gcwd()
     ## If the run name is none
     run_name = setrunname(run_name,the_cwd)
-    #print(run_name)
     ## Make the directories 
     makedirectories(grouped_dirs)
     ## Gather and remove the old command files, error, and output logs if they are there 
@@ -289,47 +286,18 @@ if __name__ == "__main__":
     writetofile(bwa_ix_jobname, sbatch(bwa_ix_jobname,1,headpath(reference_path)) + bwaix_coms, debug)
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
+
     ##      CHROMOSOME GATHERING 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+    ## Load in more mods
+    ## Gather chromoosoes
+    from chrommap import gathering, chromgathering
     ## Inform the user we are gathering chromosomes
     print(chromgathering)
-    ## Set fai path
-    fai_path = reference_path + '.fai'
-    ## Set new path to chrom
-    newpathtochrom = aligndir + '/' + reference_path.split('/')[-1].split('.fa')[0] + '.txt'
-    ## If a path of chrom file was passed and exists 
-    if pathtochrom and fileexists(pathtochrom): 
-        ## Set the list of chromosomes 
-        chrlist = readtable(pathtochrom)[0].values
-    elif fileexists(fai_path):
-        ## Patch path
-        pathtochrom = newpathtochrom
-        ## Load in the fai file fromt he reference 
-        chrbed = readtable(fai_path)
-        ## SAve out the bed file 
-        chrbed[[0,1]].to_csv(pathtochrom,sep=' ',index=False,header=False)
-        ## Set the list of chromosomes 
-        chrlist = chrbed[0].values
-    ## Make a dataframe of the files 
-    else: ## Bring in the list of chromosomes from the fasta file
-        ## Patch chrom 
-        pathtochrom = newpathtochrom
-        ## IF, the path to chrom form the reference file path already exists 
-        if fileexists(pathtochrom):
-            chrbed = readtable(pathtochrom)
-        else:
-            ## Gather tupes of chromosome ids and lengths 
-            chrbed = chromdf(reference_path)
-            ## Save out the chrbed as an .txt file for next time or further analysis 
-            chrbed.to_csv(pathtochrom,sep=' ',index=False,header=False)
-        ## Set the list of chromosomes 
-        chrlist = chrbed[0].values
-
-    ## Expand exlcude list to include mitochondria contic 
+    ## Expand exlcude list to include mitochondria contig
     excludes.append(mito)
-        
-    ## Remove mito
-    chrlist = [c for c in chrlist if (c not in excludes)]
+    ## Gather a list of chromosomes 
+    chrlist = gathering(reference_path,pathtochrom,excludes)
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
@@ -365,7 +333,7 @@ if __name__ == "__main__":
     ## Gather the fastqs 
     in_fastqs = getfastqs(fastqdir+'/*.gz')
     ## Assert we have fastq files
-    assert len(in_fastqs) > 0, "ERROR: No fastq.gz files were detected!"
+    assert len(in_fastqs), missingfqs
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 

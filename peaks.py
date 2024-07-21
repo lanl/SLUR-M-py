@@ -110,6 +110,11 @@ def splitcommand(bam:str, mito:str, threads:int, script='split') -> tuple:
     commands = [f'{scriptsdir}/readspliter.py -b {bam} -M {mito} >> {report}\n'] + [bambyreadname(bam,r,threads)[0] for r in [mapped_txt, placed_txt, mito_txt]] + [splitecho(bam,report,'readspliter.py')]
     ## Return the command
     return commands, report 
+
+
+
+
+
 ## --------------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
@@ -119,7 +124,6 @@ def splitcommand(bam:str, mito:str, threads:int, script='split') -> tuple:
 if __name__ == "__main__":
     ## Bring in argparse and set parser
     import argparse
-
     ## Make the parse
     parser = argparse.ArgumentParser(description = peakatac_descr)
 
@@ -162,6 +166,9 @@ if __name__ == "__main__":
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
+
+
+
     ##      PASS ARGUMENTS & SET VARIABLES 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## Set required variables
@@ -200,6 +207,9 @@ if __name__ == "__main__":
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
+    
+    
+    
     ##      ROTH SETTINGS
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## Reset reference with presets if we are running as Cullen Roth (These can be edited if you are not me :-))
@@ -210,7 +220,7 @@ if __name__ == "__main__":
     ##      INITILIZATION 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## Check that the fastq path exists
-    assert pathexists(fastqdir), "ERROR: Unable to detect a fastqs directory!"
+    assert pathexists(fastqdir), fastqserror
     ## Check the versions of samtools, the user email is an email and the experiment mode is one we know
     assert checksam(), not_sam_err 
     ## If needed reset that the fastp threads and splits such that they are a multiple of each
@@ -233,51 +243,7 @@ if __name__ == "__main__":
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
-    ##      CHROMOSOME GATHERING 
-    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
-        ## Inform the user we are gathering chromosomes
-    print(chromgathering)
-    ## Set fai path
-    ann_path = reference_path + '.ann'
-    ## Set new path to chrom
-    newpathtochrom = aligndir + '/' + reference_path.split('/')[-1].split('.fa')[0] + '.txt'
-    ## If a path of chrom file was passed and exists 
-    if pathtochrom and fileexists(pathtochrom): 
-        ## Set the list of chromosomes 
-        chrlist = readtable(pathtochrom)[0].values
-    elif fileexists(ann_path):
-        ## Patch path
-        pathtochrom = newpathtochrom
-        ## Load in the fai file fromt he reference 
-        chrbed = readann(ann_path)
-        ## SAve out the bed file 
-        chrbed[[0,1]].to_csv(pathtochrom,sep=' ',index=False,header=False)
-        ## Set the list of chromosomes 
-        chrlist = chrbed[0].values
-    ## Make a dataframe of the files 
-    else: ## Bring in the list of chromosomes from the fasta file
-        ## Patch chrom 
-        pathtochrom = newpathtochrom
-        ## IF, the path to chrom form the reference file path already exists 
-        if fileexists(pathtochrom):
-            chrbed = readtable(pathtochrom)
-        else:
-            ## Gather tupes of chromosome ids and lengths 
-            chrbed = chromdf(reference_path)
-            ## Save out the chrbed as an .txt file for next time or further analysis 
-            chrbed.to_csv(pathtochrom,sep=' ',index=False,header=False)
-        ## Set the list of chromosomes 
-        chrlist = chrbed[0].values
-
-    ## Expand exlcude list to include mitochondria contic 
-    excludes.append(mito)
-        
-    ## Remove mito
-    chrlist = [c for c in chrlist if (c not in excludes)]
-    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
-
-
-    ##      HARD RESTART 
+    ##      CONFIRM THE HARD RESTART 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
     ## If there is a hard reset passed 
     confirmreset(grouped_dirs) if hardreset else None 
@@ -302,6 +268,8 @@ if __name__ == "__main__":
 
     ##      DIRECTORY MAKING & TIME STAMP SUBMISSION 
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+    ## Let the user know we are making directories 
+    print(directormaking)
     ## Get the current working dir
     the_cwd = gcwd()
     ## If the run name is none
@@ -316,6 +284,20 @@ if __name__ == "__main__":
     bwaix_coms, bwaix_report = bwaindex(reference_path)
     ## Write the bwa index command and sbatch to file 
     writetofile(bwa_ix_jobname, sbatch(bwa_ix_jobname,1,headpath(reference_path)) + bwaix_coms, debug)
+    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+
+
+    ##      CHROMOSOME GATHERING 
+    ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+    ## Load in more mods
+    ## Gather chromoosoes
+    from chrommap import gathering, chromgathering
+    ## Inform the user we are gathering chromosomes
+    print(chromgathering)
+    ## Expand exlcude list to include mitochondria contig
+    excludes.append(mito)
+    ## Gather a list of chromosomes 
+    chrlist = gathering(reference_path,pathtochrom,excludes)
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 
@@ -346,10 +328,12 @@ if __name__ == "__main__":
 
     ##      FASTQ GATHERING
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
+    ## Inform user we are formating jobs
+    print(formatingfastq)
     ## Gather the fastqs 
     in_fastqs = getfastqs(fastqdir+'/*.gz')
     ## Assert we have fastq files
-    assert len(in_fastqs) > 0, "ERROR: No fastq.gz files were detected!"
+    assert len(in_fastqs), missingfqs
     ## ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ##
 
 

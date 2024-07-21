@@ -28,4 +28,10 @@ DATA/*.csv
 FIGURES/*.png
 FIGURES/*.pdf
 
+## Ignore vstudio code 
+.vscode/*.json
+
+## Ignore .hic files
+**.hic
+
 ## End of file 
